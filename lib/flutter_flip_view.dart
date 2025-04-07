@@ -12,23 +12,21 @@ class FlipView extends StatefulWidget {
   final AxisDirection goFrontDirection;
 
   const FlipView({
-    Key key,
-    @required this.front,
-    @required this.back,
-    @required this.animationController,
-    AxisDirection goBackDirection,
-    AxisDirection goFrontDirection,
-  })  : this.goBackDirection = goBackDirection ?? AxisDirection.left,
-        this.goFrontDirection = goFrontDirection ?? AxisDirection.left,
-        super(key: key);
+    super.key,
+    required this.front,
+    required this.back,
+    required this.animationController,
+    this.goBackDirection = AxisDirection.left,
+    this.goFrontDirection = AxisDirection.left,
+  });
 
   @override
   FlipViewState createState() => FlipViewState();
 }
 
 class FlipViewState extends State<FlipView> with SingleTickerProviderStateMixin {
-  Animation<double> _animation;
-  AnimationStatus _lastStatus;
+  late Animation<double> _animation;
+  AnimationStatus? _lastStatus;
 
   @override
   void initState() {
@@ -39,23 +37,27 @@ class FlipViewState extends State<FlipView> with SingleTickerProviderStateMixin 
       if (_lastStatus == status) return;
       _lastStatus = status;
 
-      if (!this.mounted) return;
+      if (!mounted) return;
 
       if (status == AnimationStatus.completed || status == AnimationStatus.reverse) {
-        _animation = _calculateTweenSequence(widget.goFrontDirection);
+        setState(() {
+          _animation = _calculateTweenSequence(widget.goFrontDirection);
+        });
       } else if (status == AnimationStatus.dismissed || status == AnimationStatus.forward) {
-        _animation = _calculateTweenSequence(widget.goBackDirection);
+        setState(() {
+          _animation = _calculateTweenSequence(widget.goBackDirection);
+        });
       }
     });
   }
 
   Animation<double> _calculateTweenSequence(AxisDirection direction) {
     final reverse = (direction == AxisDirection.right || direction == AxisDirection.down);
-    final frontTween = Tween(
+    final frontTween = Tween<double>(
       begin: 0.0,
       end: reverse ? -pi / 2.0 : pi / 2.0,
     );
-    final backTween = Tween(
+    final backTween = Tween<double>(
       begin: reverse ? pi / 2.0 : -pi / 2.0,
       end: 0.0,
     );
@@ -67,13 +69,11 @@ class FlipViewState extends State<FlipView> with SingleTickerProviderStateMixin 
 
   @override
   Widget build(BuildContext context) {
-    final front = widget.front;
-    final back = widget.back;
     return AnimatedBuilder(
       animation: _animation,
-      builder: (BuildContext context, Widget child) {
+      builder: (context, child) {
         final direction = (_animation.status == AnimationStatus.forward ||
-                _animation.status == AnimationStatus.completed)
+            _animation.status == AnimationStatus.completed)
             ? widget.goBackDirection
             : widget.goFrontDirection;
         return Transform(
@@ -81,11 +81,11 @@ class FlipViewState extends State<FlipView> with SingleTickerProviderStateMixin 
           alignment: Alignment.center,
           child: IndexedStack(
             alignment: Alignment.center,
-            children: <Widget>[
-              front,
-              back,
-            ],
             index: widget.animationController.value < 0.5 ? 0 : 1,
+            children: [
+              widget.front,
+              widget.back,
+            ],
           ),
         );
       },
